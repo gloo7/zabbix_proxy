@@ -1,0 +1,12 @@
+{
+    "collector": {
+        "mode": "ftp"
+    },
+    "parser": {
+        "mode": "regex",
+        "regex": ""
+    },
+    "handler": {
+        "mode": "zabbix"
+    }
+}
