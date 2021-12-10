@@ -13,13 +13,12 @@ logger.propagate = False
 fmt = Formatter(
     "%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s")
 
-log_path = os.path.join(LOG_PATH, __name__)
 
-if not os.path.exists(log_path):
-    os.makedirs(log_path)
+if not os.path.exists(LOG_PATH):
+    os.makedirs(LOG_PATH)
 
 fh = RotatingFileHandler(
-    filename=f'{log_path}/err', maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT)
+    filename=f'{LOG_PATH}/err.log', maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT)
 fh.setFormatter(fmt)
 fh.setLevel(LEVEL)
 logger.addHandler(fh)

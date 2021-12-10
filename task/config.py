@@ -1,4 +1,7 @@
+from ipaddress import IPv4Address, IPv6Address
+from pathlib import Path
 from typing import Dict, List, Optional, Union
+
 from pydantic import BaseModel
 
 from .const import CollectorChoice, HandlerChoice, ParserChoice, RewriterChoice
@@ -37,12 +40,25 @@ class SetRewriter(Rewriter):
 
 
 class MappingRewriter(Rewriter):
-    map: Dict[str, str]
+    key: str
+    mapping: Dict[str, str]
 
 
 class Handler(BaseModel):
     mode: HandlerChoice
-    ip: str
+
+
+class ZabbixHandler(BaseModel):
+    addr: Union[IPv4Address, IPv6Address]
+    port: int
+
+
+class StreamHandler(Handler):
+    template: str
+
+
+class FileHandler(StreamHandler):
+    filepath: Path
 
 
 class Config(BaseModel):
@@ -51,10 +67,3 @@ class Config(BaseModel):
     rewrites: Optional[
         List[Union[SetRewriter, MappingRewriter]]] = None
     handlers: List[Handler]
-
-
-if __name__ == '__main__':
-    try:
-        config = Config.parse_file(path='./config.json')
-    except Exception as e:
-        print(e)
