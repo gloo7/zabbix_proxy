@@ -2,24 +2,24 @@ import atexit
 import os
 import signal
 import sys
-from typing import Callable, List, NoReturn, Optional, Union
+from typing import Callable, List, Optional
 
 from logger import logger
 from settings import COMMAND_DIR
 
 from .collector.collector import init_collector
+from ._typing import D, Collector, Process, Handler
 from .config import Config
-from .const import D
 from .handler.handler import init_handlers
 from .parser.parser import init_parser
 from .rewriter.rewriter import init_rewrites
 
 
 class Task:
-    collector: Callable[[], D]
-    parser: Callable[[D], Union[D, List[D]]]
-    rewrites: Optional[List[Callable[[D], D]]] = None
-    handlers: List[Callable[[D], NoReturn]]
+    collector: Collector
+    parser: Optional[Process] = None
+    rewrites: Optional[List[Process]] = None
+    handlers: List[Handler]
 
     @classmethod
     def daemonize(cls, pidfile: str, stdin: str = '/dev/null', stdout: str = '/dev/null', stderr: str = '/dev/null') -> None:
@@ -82,14 +82,15 @@ class Task:
         # cls.daemonize(pidfile)
 
         path = os.path.join(COMMAND_DIR, command_file)
-        # try:
-        _config = Config.parse_file(path)
-        # except Exception as e:
-            # logger.error(e)
-            # sys.exit(1)
+        try:
+            _config = Config.parse_file(path)
+        except Exception as e:
+            logger.error(e)
+            sys.exit(1)
 
         cls.collector = init_collector(_config.collector)
-        cls.parser = init_parser(_config.parser)
+        if _config.parser is not None:
+            cls.parser = init_parser(_config.parser)
         if _config.rewrites is not None:
             cls.rewrites = init_rewrites(_config.rewrites)
         cls.handlers = init_handlers(_config.handlers)
@@ -99,9 +100,10 @@ class Task:
     @classmethod
     def run(cls):
         data = cls.collector()
-        data = cls.parser(data)
 
         def _run(d: D) -> None:
+            if cls.parser is not None:
+                d = cls.parser(d)
             if cls.rewrites is not None:
                 for rewrite in cls.rewrites:
                     d = rewrite(d)
@@ -118,14 +120,17 @@ class Task:
     def stop(cls, command: str) -> None:
         pidfile = f'/tmp/{command}'
         if not os.path.exists(pidfile):
-            logger.error(
-                f'Failed to stop {command}: Unit {command} not loaded.')
+            logger.error(f'Failed to stop {command}: Unit {command} not loaded.')
             sys.exit(1)
 
         with open(pidfile, 'r') as f:
             pid = f.read()
-
-        os.kill(pid)
+        try:
+            pid = int(pid)
+        except ValueError:
+            logger.error(f'Failed to stop {command}: Unit {command} not loaded.')
+            sys.exit(1)
+        os.kill(pid, 0)
         os.remove(pidfile)
 
     @classmethod

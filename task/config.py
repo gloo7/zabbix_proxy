@@ -7,63 +7,94 @@ from pydantic import BaseModel
 from .const import CollectorChoice, HandlerChoice, ParserChoice, RewriterChoice
 
 
-class Collector(BaseModel):
+class CollectorConfig(BaseModel):
     mode: CollectorChoice
 
 
-class Parser(BaseModel):
+class LocalCollectorConfig(CollectorConfig):
+    path: Path
+
+
+class MysqlCollectorConfig(CollectorConfig):
+    host: Union[IPv4Address, IPv6Address]
+    port: int = 3306
+    user: str
+    password: str
+    database: str
+    charset: str = "utf8"
+
+
+class FtpCollectorConfig(CollectorConfig):
+    host: Union[IPv4Address, IPv6Address]
+    port: int = 21
+    user: str
+    password: str
+    dirname: str
+    filename: str
+
+
+class SSHCollectorConfig(CollectorConfig):
+    host: Union[IPv4Address, IPv6Address]
+    port: int = 22
+    user: str
+    password: str
+    command: str
+
+
+class ParserConfig(BaseModel):
     mode: ParserChoice
+    field: str = "message"
 
 
-class RegexParser(Parser):
+class RegexParserConfig(ParserConfig):
     regex: str
 
 
-class CsvParser(Parser):
+class CsvParserConfig(ParserConfig):
     sep: str
     columns: List[str]
 
 
-class XmlParser(Parser):
-    format: str = 'xml'
+class XmlParserConfig(ParserConfig):
+    format: str = "xml"
     key: str
     xpath: str
 
 
-class Rewriter(BaseModel):
+class RewriterConfig(BaseModel):
     mode: RewriterChoice
 
 
-class SetRewriter(Rewriter):
+class SetRewriterConfig(RewriterConfig):
     key: str
     value: str
 
 
-class MappingRewriter(Rewriter):
+class MappingRewriterConfig(RewriterConfig):
     key: str
     mapping: Dict[str, str]
 
 
-class Handler(BaseModel):
+class HandlerConfig(BaseModel):
     mode: HandlerChoice
 
 
-class ZabbixHandler(BaseModel):
-    addr: Union[IPv4Address, IPv6Address]
+class ZabbixHandlerConfig(BaseModel):
+    host: Union[IPv4Address, IPv6Address]
     port: int
 
 
-class StreamHandler(Handler):
+class StreamHandlerConfig(HandlerConfig):
     template: str
 
 
-class FileHandler(StreamHandler):
-    filepath: Path
+class FileHandlerConfig(StreamHandlerConfig):
+    path: Path
 
 
 class Config(BaseModel):
-    collector: Collector
-    parser: Union[RegexParser, CsvParser, XmlParser]
+    collector: Union[CollectorConfig, LocalCollectorConfig, MysqlCollectorConfig, FtpCollectorConfig, SSHCollectorConfig]
+    parser: Optional[RegexParserConfig, CsvParserConfig, XmlParserConfig] = None
     rewrites: Optional[
-        List[Union[SetRewriter, MappingRewriter]]] = None
-    handlers: List[Handler]
+        List[Union[SetRewriterConfig, MappingRewriterConfig]]] = None
+    handlers: List[HandlerConfig]

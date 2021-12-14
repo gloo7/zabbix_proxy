@@ -1,10 +1,10 @@
 from typing import Callable
 
-from task.config import Collector
-from task.const import D
+from task.config import CollectorConfig
+from task._typing import Collector
 
 from .map import collector_mapping
 
 
-def init_collector(config: Collector) -> Callable[[], D]:
-    return collector_mapping.get(config.mode.value)
+def init_collector(config: CollectorConfig) -> Collector:
+    return collector_mapping.get(config.mode.value)(**config.dict())

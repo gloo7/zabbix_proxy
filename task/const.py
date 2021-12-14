@@ -1,7 +1,5 @@
 from enum import Enum, EnumMeta
-from typing import Dict, Iterable, Mapping, TypeVar
-
-D = TypeVar('D', Dict[str, str], Mapping[str, str])
+from typing import Iterable
 
 from .collector.map import collector_mapping
 from .handler.map import handler_mapping

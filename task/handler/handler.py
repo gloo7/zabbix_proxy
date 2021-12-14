@@ -1,10 +1,10 @@
-from typing import Callable, List
+from typing import List
 
-from task.config import Handler
-from task.const import D
+from task.config import HandlerConfig
+from task._typing import Handler
 
 from .map import handler_mapping
 
 
-def init_handlers(config: List[Handler] = None) -> List[Callable[[D], D]]:
-    return [handler_mapping.get(item.mode.value)(item) for item in config]
+def init_handlers(config: List[HandlerConfig] = None) -> List[Handler]:
+    return [handler_mapping.get(item.mode.value)(**item.dict()) for item in config]
