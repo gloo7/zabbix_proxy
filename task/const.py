@@ -1,6 +1,12 @@
 from enum import Enum, EnumMeta
 from typing import Iterable
 
+
+class FileMatchChoice(str, Enum):
+    strict = 'strict'
+    glob = 'glob'
+
+
 from .collector.map import collector_mapping
 from .handler.map import handler_mapping
 from .parser.map import parser_mapping

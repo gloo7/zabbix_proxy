@@ -1,37 +1,58 @@
 import sys
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
-from typing import Callable, Union
+from typing import Union
 
 from logger import logger
 from task._typing import D, Collector
+from task.const import FileMatchChoice
 
 
-def local_collector(*args, path: Path, **kwargs) -> Collector:
-    if not path.exists():
-        logger.error(f'{path} is not exists.')
+def match_file(dir: Path, filename: str, match: FileMatchChoice) -> Path:
+    if not dir.is_dir():
+        logger.error(f'{dir} is not exists.')
         sys.exit(1)
 
+    file: Path
+    if match == FileMatchChoice.strict:
+        file = dir / filename
+    else:
+        try:
+            files = dir.glob(filename)
+            _, file = max((f.stat().st_ctime, f) for f in files)
+        except ValueError:
+            logger.error('No match to file.')
+            sys.exit(1)
+    if not file.is_file():
+        logger.error('Not a file.')
+        sys.exit(1)
+    return file
+
+
+def local_collector(*args, dir: Path, filename: str, match: FileMatchChoice = FileMatchChoice.strict, **kwargs) -> Collector:
+    file = match_file(dir, filename, match)
+
     def inner() -> D:
-        return dict(message=path.read_text())
+        return dict(message=file.read_text())
     return inner
 
 
-def ftp_collector(*args, host: Union[IPv4Address, IPv6Address], port: int, user: str, password: str, dirname: str,
-                  filename: str, **kwargs) -> Collector:
+def ftp_collector(*args, host: Union[IPv4Address, IPv6Address], port: int, user: str, password: str, dir: Path,
+                  filename: str, match: FileMatchChoice, **kwargs) -> Collector:
     from ftplib import FTP
     ftp = FTP()
     ftp.set_debuglevel(2)
     ftp.connect(str(host), port)
     ftp.login(user, password)
-    ftp.cwd(dirname)
+    file = match_file(dir, filename, match)
 
     def inner() -> D:
-        with open(filename, 'r') as f:
-            message = f.read()
-
+        data = dict(
+            message=file.read_text(),
+            host=host
+        )
         ftp.quit()
-        return dict(message=message, host=host)
+        return data
     return inner
 
 
@@ -63,7 +84,10 @@ def ssh_collector(*args, host: Union[IPv4Address, IPv6Address], port: int, user:
         stdin, stdout, stderr = ssh.exec_command(command)
         result = str(stdout.read())
         ssh.close()
-        return dict(message=result)
+        return dict(
+            host=host,
+            message=result
+        )
     return inner
 
 

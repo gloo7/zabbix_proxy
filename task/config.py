@@ -4,15 +4,17 @@ from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from .const import CollectorChoice, HandlerChoice, ParserChoice, RewriterChoice
+from .const import CollectorChoice, HandlerChoice, ParserChoice, RewriterChoice, FileMatchChoice
 
 
 class CollectorConfig(BaseModel):
     mode: CollectorChoice
 
 
-class LocalCollectorConfig(CollectorConfig):
-    path: Path
+class FileCollectorConfig(CollectorConfig):
+    dir: Path
+    filename: str
+    match: FileMatchChoice = FileMatchChoice.strict
 
 
 class MysqlCollectorConfig(CollectorConfig):
@@ -24,13 +26,11 @@ class MysqlCollectorConfig(CollectorConfig):
     charset: str = "utf8"
 
 
-class FtpCollectorConfig(CollectorConfig):
+class FtpCollectorConfig(FileCollectorConfig):
     host: Union[IPv4Address, IPv6Address]
     port: int = 21
     user: str
     password: str
-    dirname: str
-    filename: str
 
 
 class SSHCollectorConfig(CollectorConfig):
@@ -93,8 +93,8 @@ class FileHandlerConfig(StreamHandlerConfig):
 
 
 class Config(BaseModel):
-    collector: Union[CollectorConfig, LocalCollectorConfig, MysqlCollectorConfig, FtpCollectorConfig, SSHCollectorConfig]
-    parser: Optional[RegexParserConfig, CsvParserConfig, XmlParserConfig] = None
+    collector: Union[CollectorConfig, FileCollectorConfig, MysqlCollectorConfig, FtpCollectorConfig, SSHCollectorConfig]
+    parser: Union[RegexParserConfig, CsvParserConfig, XmlParserConfig] = None
     rewrites: Optional[
         List[Union[SetRewriterConfig, MappingRewriterConfig]]] = None
     handlers: List[HandlerConfig]

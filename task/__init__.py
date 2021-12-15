@@ -22,7 +22,8 @@ class Task:
     handlers: List[Handler]
 
     @classmethod
-    def daemonize(cls, pidfile: str, stdin: str = '/dev/null', stdout: str = '/dev/null', stderr: str = '/dev/null') -> None:
+    def daemonize(cls, command: str, stdin: str = '/dev/null', stdout: str = '/dev/null', stderr: str = '/dev/null') -> None:
+        pidfile = f'/tmp/{command}'
         if os.path.exists(pidfile):
             logger.error('Already running')
             sys.exit(1)
@@ -78,8 +79,7 @@ class Task:
                 f'Failed to start {command}: Unit {command} not found.')
             sys.exit(1)
 
-        pidfile = f'/tmp/{command}'
-        # cls.daemonize(pidfile)
+        # cls.daemonize(command)
 
         path = os.path.join(COMMAND_DIR, command_file)
         try:
