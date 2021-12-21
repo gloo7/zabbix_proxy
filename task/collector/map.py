@@ -1,11 +1,11 @@
 import sys
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional, Dict
 
 from logger import logger
 from task._typing import D, Collector
-from task.const import FileMatchChoice
+from task.const import FileMatchChoice, MethodChoice
 
 
 def match_file(dir: Path, filename: str, match: FileMatchChoice) -> Path:
@@ -91,5 +91,22 @@ def ssh_collector(*args, host: Union[IPv4Address, IPv6Address], port: int, user:
     return inner
 
 
-collector_mapping = {k.rstrip('_collector'): globals(
+def api_collector(*args, method: MethodChoice, url: str, json_data: Optional[dict] = None, data: Optional[dict] = None,
+                  index: Optional[str] = None, headers: Optional[dict] = None, **kwargs) -> Collector:
+    import requests
+
+    def inner() -> D:
+        resp = requests.request(method, url=url, json=json_data, data=data, headers=headers)
+        assert resp.status_code == 200
+        temp = resp.json()
+        if index is not None:
+            ins = index.split('.')
+            for i in ins:
+                temp = temp[i]
+        return temp
+
+    return inner
+
+
+collector_mapping = {k.replace('_collector', ''): globals(
 )[k] for k in globals() if k.endswith('_collector')}

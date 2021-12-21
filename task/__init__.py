@@ -3,6 +3,8 @@ import os
 import signal
 import sys
 from typing import Callable, List, Optional
+from pathlib import Path
+from pydantic import ValidationError
 
 from logger import logger
 from settings import COMMAND_DIR
@@ -12,13 +14,13 @@ from ._typing import D, Collector, Process, Handler
 from .config import Config
 from .handler.handler import init_handlers
 from .parser.parser import init_parser
-from .rewriter.rewriter import init_rewrites
+from .rewriter.rewriter import init_rewriters
 
 
 class Task:
     collector: Collector
     parser: Optional[Process] = None
-    rewrites: Optional[List[Process]] = None
+    rewriters: Optional[List[Process]] = None
     handlers: List[Handler]
 
     @classmethod
@@ -72,27 +74,38 @@ class Task:
 
     @classmethod
     def start(cls, command: str) -> None:
-        commands = os.listdir(COMMAND_DIR)
-        command_file = f'{command}.json'
-        if command_file not in commands:
+        command_dir = Path(COMMAND_DIR)
+        try:
+            file = next(command_dir.glob(f'{command}.*'))
+        except StopIteration:
             logger.error(
                 f'Failed to start {command}: Unit {command} not found.')
             sys.exit(1)
 
-        # cls.daemonize(command)
-
-        path = os.path.join(COMMAND_DIR, command_file)
         try:
-            _config = Config.parse_file(path)
+            if file.name.endswith('.json'):
+                import json
+                obj = json.loads(file.read_text())
+            else:
+                from importlib import import_module
+                module = f'{command_dir.name}.{command}'
+                obj = import_module(module).obj
         except Exception as e:
             logger.error(e)
             sys.exit(1)
 
+        try:
+            _config = Config.parse_obj(obj)
+        except ValidationError as e:
+            logger.error(e.errors())
+            sys.exit(1)
+
+        # cls.daemonize(command)
         cls.collector = init_collector(_config.collector)
         if _config.parser is not None:
             cls.parser = init_parser(_config.parser)
-        if _config.rewrites is not None:
-            cls.rewrites = init_rewrites(_config.rewrites)
+        if _config.rewriters is not None:
+            cls.rewriters = init_rewriters(_config.rewriters)
         cls.handlers = init_handlers(_config.handlers)
 
         cls.run()
@@ -104,9 +117,9 @@ class Task:
         def _run(d: D) -> None:
             if cls.parser is not None:
                 d = cls.parser(d)
-            if cls.rewrites is not None:
-                for rewrite in cls.rewrites:
-                    d = rewrite(d)
+            if cls.rewriters is not None:
+                for rewriter in cls.rewriters:
+                    d = rewriter(d)
             for handler in cls.handlers:
                 handler(d)
 

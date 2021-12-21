@@ -1,10 +1,19 @@
 from enum import Enum, EnumMeta
 from typing import Iterable
+import requests
 
 
 class FileMatchChoice(str, Enum):
     strict = 'strict'
     glob = 'glob'
+
+
+class MethodChoice(str, Enum):
+    get = 'get'
+    post = 'post'
+    put = 'put'
+    delete = 'delete'
+    options = 'options'
 
 
 from .collector.map import collector_mapping

@@ -1,4 +1,4 @@
-from typing import Callable, Any, Union, List
+from typing import Any
 
 from task._typing import D, Process
 
@@ -44,4 +44,4 @@ def xml_parser(*args: Any, key: str, xpath: str, **kwargs: Any) -> Process:
     return inner
 
 
-parser_mapping = {k.rstrip('_parser'): globals()[k] for k in globals() if k.endswith('_parser')}
+parser_mapping = {k.replace('_parser', ''): globals()[k] for k in globals() if k.endswith('_parser')}
