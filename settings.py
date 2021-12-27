@@ -8,7 +8,7 @@ PIDFILE = '/tmp/'
 
 # logging
 LOG_PATH = f'{BASE_DIR}/logs'
-LEVEL = logging.DEBUG
-IS_PRINT = True
+LEVEL = logging.INFO
+IS_PRINT = False
 MAX_BYTES = 1024*1024*10
 BACKUP_COUNT = 10

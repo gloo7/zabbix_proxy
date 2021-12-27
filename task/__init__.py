@@ -73,7 +73,7 @@ class Task:
         signal.signal(signal.SIGTERM, sigterm_handler)
 
     @classmethod
-    def start(cls, command: str) -> None:
+    def start(cls, command: str, params: List[str]) -> None:
         command_dir = Path(COMMAND_DIR)
         try:
             file = next(command_dir.glob(f'{command}.*'))
@@ -88,10 +88,11 @@ class Task:
                 obj = json.loads(file.read_text())
             else:
                 from importlib import import_module
-                module = f'{command_dir.name}.{command}'
-                obj = import_module(module).obj
+                module_name = f'{command_dir.name}.{command}'
+                module_obj = import_module(module_name)
+                obj = module_obj.get_obj(*params)
         except Exception as e:
-            logger.error(e)
+            logger.error(f'{command} Object loading failed', e)
             sys.exit(1)
 
         try:
@@ -108,26 +109,29 @@ class Task:
             cls.rewriters = init_rewriters(_config.rewriters)
         cls.handlers = init_handlers(_config.handlers)
 
-        cls.run()
+        cls.run(command)
 
     @classmethod
-    def run(cls):
-        data = cls.collector()
+    def run(cls, command: str):
+        try:
+            data = cls.collector()
 
-        def _run(d: D) -> None:
-            if cls.parser is not None:
-                d = cls.parser(d)
-            if cls.rewriters is not None:
-                for rewriter in cls.rewriters:
-                    d = rewriter(d)
-            for handler in cls.handlers:
-                handler(d)
+            def _run(d: D) -> None:
+                if cls.parser is not None:
+                    d = cls.parser(d)
+                if cls.rewriters is not None:
+                    for rewriter in cls.rewriters:
+                        d = rewriter(d)
+                for handler in cls.handlers:
+                    handler(d)
 
-        if isinstance(data, list):
-            for item in data:
-                _run(item)
-        else:
-            _run(data)
+            if isinstance(data, list):
+                for item in data:
+                    _run(item)
+            else:
+                _run(data)
+        except Exception as e:
+            logger.error(f'{command} execution failed', e)
 
     @classmethod
     def stop(cls, command: str) -> None:
