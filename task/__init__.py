@@ -73,7 +73,7 @@ class Task:
         signal.signal(signal.SIGTERM, sigterm_handler)
 
     @classmethod
-    def start(cls, command: str, params: List[str]) -> None:
+    def start(cls, command: str, params: Optional[List[str]] = None) -> None:
         command_dir = Path(COMMAND_DIR)
         try:
             file = next(command_dir.glob(f'{command}.*'))

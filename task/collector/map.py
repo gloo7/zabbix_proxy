@@ -56,6 +56,20 @@ def ftp_collector(*args, host: Union[IPv4Address, IPv6Address], port: int, user:
     return inner
 
 
+def cmd_collector(*args, command: str, **kwargs):
+    import subprocess
+
+    def inner() -> D:
+        result = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return dict(message=str(result))
+    return inner
+
+
 def mysql_collector(*args, host: Union[IPv4Address, IPv6Address], port: int, user: str, password: str, charset: str,
                     sql: str, **kwargs) -> Collector:
     import pymysql

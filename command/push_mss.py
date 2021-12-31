@@ -161,6 +161,9 @@ def get_auth() -> dict:
 now = datetime.now()
 time_till = now - timedelta(minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
 time_from = time_till - timedelta(hours=1)
+print(time_from.timestamp())
+print(time_till.timestamp())
+
 
 data = {
     "jsonrpc": "2.0",

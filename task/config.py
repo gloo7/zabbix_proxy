@@ -14,7 +14,7 @@ class CollectorConfig(BaseModel):
 class FileCollectorConfig(CollectorConfig):
     dir: Path
     filename: str
-    match: FileMatchChoice = FileMatchChoice.strict
+    file_match: FileMatchChoice = FileMatchChoice.strict
 
 
 class MysqlCollectorConfig(CollectorConfig):
@@ -44,7 +44,11 @@ class APICollectorConfig(CollectorConfig):
     index: Optional[str] = None
 
 
-class SSHCollectorConfig(CollectorConfig):
+class CMDCollectorConfig(CollectorConfig):
+    command: str
+
+
+class SSHCollectorConfig(CMDCollectorConfig):
     host: Union[IPv4Address, IPv6Address]
     port: int = 22
     user: str
@@ -129,7 +133,7 @@ class FileHandlerConfig(StreamHandlerConfig):
 
 class Config(BaseModel):
     collector: Union[MysqlCollectorConfig, FtpCollectorConfig, SSHCollectorConfig, APICollectorConfig,
-                     FileCollectorConfig]
+                     FileCollectorConfig, CMDCollectorConfig]
     parser: Union[RegexParserConfig, CsvParserConfig, XmlParserConfig] = None
     rewriters: Optional[List[Union[SetRewriterConfig, MappingRewriterConfig, RenameRewriterConfig, DeleteRewriterConfig,
                                    TimestampRewriterConfig]]] = None
